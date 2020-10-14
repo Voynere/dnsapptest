@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+
+const kEndpoint = 'https://vacancy.dns-shop.ru';
 
 void main() => runApp(DnsApp());
 
@@ -28,7 +31,7 @@ class DnsApp extends StatelessWidget {
 
 class HomePage extends StatelessWidget {
   final _formKey = GlobalKey<FormState>();
-  final _values = {'firstName': '', 'lastName': '', 'phone': '', 'email': ''};
+  final _values = {'firstName': '', 'lastName': '', 'email': '', 'phone': ''};
 
   @override
   Widget build(BuildContext context) {
@@ -49,17 +52,22 @@ class HomePage extends StatelessWidget {
                 decoration: InputDecoration(
                   hintText: 'Имя',
                 ),
-                validator: (text) {
-                  if (text == null || text.isEmpty) {
+                validator: (String value) {
+                  if (value == null || value.trim().isEmpty) {
                     return 'Введите имя';
                   }
+                  _values['firstName'] = value.trim();
                   return null;
-                },
-              ),
+                 },
+                ),
               SizedBox(height: 16),
               TextFormField(
                 decoration: InputDecoration(
                   hintText: 'Фамилия',
+                ),
+                validator: _validateText(
+                  fieldName: 'lastName',
+                  errorText: 'Введите фамилию',
                 ),
               ),
               SizedBox(height: 16),
@@ -68,11 +76,20 @@ class HomePage extends StatelessWidget {
                   hintText: 'e-mail',
                 ),
                 keyboardType: TextInputType.emailAddress,
+                validator: _validateText(
+                  fieldName: 'email',
+                  errorText: 'Введите e-mail',
+                ),
               ),
               SizedBox(height: 16),
               TextFormField(
                 decoration: InputDecoration(
                   hintText: 'Телефон',
+                ),
+                keyboardType: TextInputType.phone,
+                validator: _validateText(
+                  fieldName: 'phone',
+                  errorText: 'Введите телефон',
                 ),
               ),
               SizedBox(height: 16),
@@ -80,8 +97,18 @@ class HomePage extends StatelessWidget {
                 child: Align(
                   alignment: Alignment.bottomCenter,
                   child: RaisedButton(
-                    onPressed: () {
+                    onPressed: () async {
                       _formKey.currentState.validate();
+
+                        final response = await http.post(
+                        '$kEndpoint/api/candidate/token',
+                        body: _values,
+                        );
+                        print('Response status: ${response.statusCode}');
+                        print('Response body: ${response.body}');
+
+                        print(await http.read('https://example.com/foobar.txt'));
+
                       Navigator.pushNamed(context, '/transfering2');
                     },
                     child: Text('Получить ключ'.toUpperCase()),
@@ -94,6 +121,17 @@ class HomePage extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  _validateText({String fieldName, String errorText}) {
+    return (String value) {
+      final testValue = value?.trim();
+      if (testValue.isEmpty) {
+        return errorText;
+      }
+      _values[fieldName] = testValue;
+      return null;
+    };
   }
 }
 
